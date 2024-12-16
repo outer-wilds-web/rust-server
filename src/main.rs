@@ -1,9 +1,12 @@
-use serde_json;
+mod ship;
+
+use serde_json::{self, json};
+use ship::TheShip;
 use std::f64::consts::PI;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
-use ws::{listen, CloseCode, Handler, Handshake, Message, Result, Sender};
+use ws::{listen, Handler, Handshake, Message, Result, Sender};
 
 #[derive(Clone)]
 struct Planet {
@@ -74,47 +77,80 @@ struct Server {
     out: Sender,
     solar_system: Arc<Mutex<SolarSystem>>,
     last_update: Instant,
+    ship: Arc<Mutex<TheShip>>, // Ajout du vaisseau
 }
 
 impl Handler for Server {
     fn on_open(&mut self, _: Handshake) -> Result<()> {
         self.last_update = Instant::now();
-        let out = self.out.clone();
-        let solar_system = Arc::new(Mutex::new(self.solar_system.clone()));
-        let last_update = Arc::new(Mutex::new(self.last_update));
-        thread::spawn({
-            let solar_system = Arc::clone(&solar_system);
-            let last_update = Arc::clone(&last_update);
-            move || loop {
+        let solar_system_clone = Arc::clone(&self.solar_system);
+        let last_update_clone = Arc::new(Mutex::new(self.last_update));
+        let ship_clone = Arc::clone(&self.ship); // Utilisation du vaisseau existant
+        let out_clone = self.out.clone();
+
+        thread::spawn(move || {
+            let mut last_update = last_update_clone.lock().unwrap();
+            loop {
                 let now = Instant::now();
-                let mut last_update = last_update.lock().unwrap();
-                let delta_time = now.duration_since(*last_update).as_secs_f64();
-                {
-                    let solar_system = solar_system.lock().unwrap();
-                    solar_system.lock().unwrap().update(delta_time);
-                }
+                let delta_time = (now - *last_update).as_secs_f64();
                 *last_update = now;
 
+                {
+                    let mut solar_system = solar_system_clone.lock().unwrap();
+                    solar_system.update(delta_time);
+                }
+                {
+                    let mut ship = ship_clone.lock().unwrap();
+                    ship.update(delta_time);
+                }
+
+                // Envoyer les informations des planètes et du vaisseau via la websocket
                 let positions = {
-                    let solar_system = solar_system.lock().unwrap();
-                    let positions = solar_system.lock().unwrap().positions();
-                    positions
+                    let solar_system = solar_system_clone.lock().unwrap();
+                    solar_system.positions()
                 };
-                let positions_json = serde_json::to_string(&positions).unwrap();
-                out.send(positions_json).unwrap();
+                let ship_info = {
+                    let ship = ship_clone.lock().unwrap();
+                    ship.to_json()
+                };
+                let message = json!({
+                    "planets": positions,
+                    "ship": ship_info,
+                });
+                out_clone.send(Message::text(message.to_string())).unwrap();
 
                 thread::sleep(Duration::from_millis(1000 / 60));
-                // thread::sleep(Duration::from_millis(1000));
             }
         });
+
         Ok(())
     }
 
-    fn on_message(&mut self, _: Message) -> Result<()> {
+    fn on_message(&mut self, msg: Message) -> Result<()> {
+        let msg_text = msg.into_text()?;
+        if let Ok(data) = serde_json::from_str::<serde_json::Value>(&msg_text) {
+            if let Some(data) = data.get("data") {
+                if let Some(engines) = data.get("engines") {
+                    let mut ship = self.ship.lock().unwrap();
+                    ship.engines.front = engines.get("front").unwrap().as_bool().unwrap();
+                    ship.engines.back = engines.get("back").unwrap().as_bool().unwrap();
+                    ship.engines.left = engines.get("left").unwrap().as_bool().unwrap();
+                    ship.engines.right = engines.get("right").unwrap().as_bool().unwrap();
+                    ship.engines.up = engines.get("up").unwrap().as_bool().unwrap();
+                    ship.engines.down = engines.get("down").unwrap().as_bool().unwrap();
+                }
+
+                if let Some(rotation) = data.get("rotation") {
+                    let mut ship = self.ship.lock().unwrap();
+                    ship.rotation_engines.left = rotation.get("left").unwrap().as_bool().unwrap();
+                    ship.rotation_engines.right = rotation.get("right").unwrap().as_bool().unwrap();
+                    ship.rotation_engines.up = rotation.get("up").unwrap().as_bool().unwrap();
+                    ship.rotation_engines.down = rotation.get("down").unwrap().as_bool().unwrap();
+                }
+            }
+        }
         Ok(())
     }
-
-    fn on_close(&mut self, _: CloseCode, _: &str) {}
 }
 
 fn main() {
@@ -122,6 +158,7 @@ fn main() {
         out,
         solar_system: Arc::new(Mutex::new(SolarSystem::new())),
         last_update: Instant::now(),
+        ship: Arc::new(Mutex::new(TheShip::new())),
     })
     .unwrap();
 }
