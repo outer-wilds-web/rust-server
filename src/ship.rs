@@ -1,7 +1,8 @@
+use serde::Serialize;
 use serde_json::json;
 use uuid::Uuid;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Engines {
     pub power: f64,
     pub front: bool,
@@ -12,7 +13,7 @@ pub struct Engines {
     pub down: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize)]
 pub struct RotationEngines {
     pub power: f64,
     pub left: bool,
@@ -21,7 +22,7 @@ pub struct RotationEngines {
     pub down: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TheShip {
     pub uuid: Uuid,
     pub speed: (f64, f64, f64),

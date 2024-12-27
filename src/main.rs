@@ -1,12 +1,17 @@
 mod ship;
 
+use dotenv::dotenv;
+use serde::Serialize;
 use serde_json::{self, json};
 use ship::TheShip;
+use std::collections::HashMap;
 use std::f64::consts::PI;
 use std::sync::{Arc, Mutex};
-use std::thread;
 use std::time::{Duration, Instant};
-use ws::{listen, Handler, Handshake, Message, Result, Sender};
+use std::{env, thread};
+use uuid::Uuid;
+use warp::Filter;
+use ws::{Handler, Handshake, Message, Result, Sender};
 
 #[derive(Clone)]
 struct Planet {
@@ -44,6 +49,7 @@ impl Planet {
 #[derive(Clone)]
 struct SolarSystem {
     planets: Vec<Planet>,
+    ships: HashMap<Uuid, Arc<Mutex<TheShip>>>,
 }
 
 impl SolarSystem {
@@ -56,6 +62,7 @@ impl SolarSystem {
                 Planet::new("Mars", 110.0, 1.88 * 60.0),
                 Planet::new("Jupiter", 150.0, 11.86 * 60.0),
             ],
+            ships: HashMap::new(),
         }
     }
 
@@ -63,6 +70,19 @@ impl SolarSystem {
         for planet in &mut self.planets {
             planet.update_position(delta_time);
         }
+
+        for ship in self.ships.values_mut() {
+            ship.lock().unwrap().update(delta_time);
+        }
+    }
+
+    fn add_ship(&mut self, ship: Arc<Mutex<TheShip>>) {
+        let uuid = ship.lock().unwrap().uuid;
+        self.ships.insert(uuid, ship);
+    }
+
+    fn remove_ship(&mut self, uuid: Uuid) {
+        self.ships.remove(&uuid);
     }
 
     fn positions(&self) -> Vec<(String, (f64, f64))> {
@@ -77,45 +97,50 @@ struct Server {
     out: Sender,
     solar_system: Arc<Mutex<SolarSystem>>,
     last_update: Instant,
-    ship: Arc<Mutex<TheShip>>, // Ajout du vaisseau
+    ship_uuid: Uuid,
 }
 
 impl Handler for Server {
     fn on_open(&mut self, _: Handshake) -> Result<()> {
+        println!("Websocket opened. Ship uuid {}", self.ship_uuid);
         self.last_update = Instant::now();
         let solar_system_clone = Arc::clone(&self.solar_system);
-        let last_update_clone = Arc::new(Mutex::new(self.last_update));
-        let ship_clone = Arc::clone(&self.ship); // Utilisation du vaisseau existant
         let out_clone = self.out.clone();
 
+        let ship = Arc::new(Mutex::new(TheShip::new()));
+        let ship_clone = ship.clone();
+        self.ship_uuid = ship.lock().unwrap().uuid;
+
+        {
+            let mut solar_system = solar_system_clone.lock().unwrap();
+            solar_system.add_ship(ship);
+        }
+
         thread::spawn(move || {
-            let mut last_update = last_update_clone.lock().unwrap();
+            println!("thread inside the websocket !");
             loop {
-                let now = Instant::now();
-                let delta_time = (now - *last_update).as_secs_f64();
-                *last_update = now;
-
-                {
-                    let mut solar_system = solar_system_clone.lock().unwrap();
-                    solar_system.update(delta_time);
-                }
-                {
-                    let mut ship = ship_clone.lock().unwrap();
-                    ship.update(delta_time);
-                }
-
                 // Envoyer les informations des planètes et du vaisseau via la websocket
                 let positions = {
                     let solar_system = solar_system_clone.lock().unwrap();
                     solar_system.positions()
                 };
-                let ship_info = {
-                    let ship = ship_clone.lock().unwrap();
-                    ship.to_json()
+
+                let ships: Vec<TheShip> = {
+                    let solar_system = solar_system_clone.lock().unwrap();
+                    solar_system
+                        .ships
+                        .values()
+                        .into_iter()
+                        .map(|ship| ship.lock().unwrap().clone())
+                        .collect()
                 };
+
+                let ship_info = { ship_clone.lock().unwrap().to_json() };
+
                 let message = json!({
                     "planets": positions,
                     "ship": ship_info,
+                    "ships": ships,
                 });
                 out_clone.send(Message::text(message.to_string())).unwrap();
 
@@ -131,7 +156,9 @@ impl Handler for Server {
         if let Ok(data) = serde_json::from_str::<serde_json::Value>(&msg_text) {
             if let Some(data) = data.get("data") {
                 if let Some(engines) = data.get("engines") {
-                    let mut ship = self.ship.lock().unwrap();
+                    let solar_system = self.solar_system.lock().unwrap();
+                    let ship = solar_system.ships.get(&self.ship_uuid).unwrap();
+                    let mut ship = ship.lock().unwrap();
                     ship.engines.front = engines.get("front").unwrap().as_bool().unwrap();
                     ship.engines.back = engines.get("back").unwrap().as_bool().unwrap();
                     ship.engines.left = engines.get("left").unwrap().as_bool().unwrap();
@@ -141,7 +168,9 @@ impl Handler for Server {
                 }
 
                 if let Some(rotation) = data.get("rotation") {
-                    let mut ship = self.ship.lock().unwrap();
+                    let solar_system = self.solar_system.lock().unwrap();
+                    let ship = solar_system.ships.get(&self.ship_uuid).unwrap();
+                    let mut ship = ship.lock().unwrap();
                     ship.rotation_engines.left = rotation.get("left").unwrap().as_bool().unwrap();
                     ship.rotation_engines.right = rotation.get("right").unwrap().as_bool().unwrap();
                     ship.rotation_engines.up = rotation.get("up").unwrap().as_bool().unwrap();
@@ -151,14 +180,74 @@ impl Handler for Server {
         }
         Ok(())
     }
+
+    fn on_close(&mut self, code: ws::CloseCode, reason: &str) {
+        let solar_system_clone = Arc::clone(&self.solar_system);
+        {
+            let mut solar_system = solar_system_clone.lock().unwrap();
+            solar_system.remove_ship(self.ship_uuid);
+        }
+        println!("WebSocket closing for ({:?}) {}", code, reason);
+    }
 }
 
-fn main() {
-    listen("127.0.0.1:3012", |out| Server {
+#[derive(Serialize)]
+struct ApiUrls {
+    backend_url: String,
+    websocket_url: String,
+}
+
+#[tokio::main]
+async fn main() {
+    dotenv().ok();
+
+    let solar_system = Arc::new(Mutex::new(SolarSystem::new()));
+
+    let auth_api_url = warp::path("auth-api-url").map(|| {
+        let backend_url = env::var("BACKEND_URL").unwrap_or_else(|_| "URL not set".to_string());
+        let websocket_url =
+            env::var("WEBSOCKET_URL").unwrap_or_else(|_| "ws://127.0.0.1:3012".to_string());
+        let api_urls = ApiUrls {
+            backend_url,
+            websocket_url,
+        };
+        warp::reply::json(&api_urls)
+    });
+
+    let cors = warp::cors()
+        .allow_any_origin()
+        .allow_header("content-type")
+        .allow_methods(["GET", "POST", "PUT", "DELETE", "OPTIONS"]);
+
+    let routes = auth_api_url.with(cors);
+
+    tokio::spawn(async move {
+        warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
+    });
+
+    let solar_system_clone = Arc::clone(&solar_system);
+
+    thread::spawn(move || {
+        let mut last_update = Instant::now();
+        loop {
+            let now = Instant::now();
+            let delta_time = (now - last_update).as_secs_f64();
+            last_update = now;
+
+            {
+                let mut solar_system = solar_system_clone.lock().unwrap();
+                solar_system.update(delta_time);
+            }
+
+            thread::sleep(Duration::from_millis(1000 / 60));
+        }
+    });
+
+    ws::listen("127.0.0.1:3012", |out| Server {
         out,
-        solar_system: Arc::new(Mutex::new(SolarSystem::new())),
+        solar_system: Arc::clone(&solar_system),
         last_update: Instant::now(),
-        ship: Arc::new(Mutex::new(TheShip::new())),
+        ship_uuid: Uuid::new_v4(),
     })
     .unwrap();
 }
