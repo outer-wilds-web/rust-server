@@ -1,4 +1,5 @@
 mod ship;
+mod kafka_producer;
 
 use dotenv::dotenv;
 use serde::Serialize;
@@ -12,6 +13,7 @@ use std::{env, thread};
 use uuid::Uuid;
 use warp::Filter;
 use ws::{Handler, Handshake, Message, Result, Sender};
+use crate::kafka_producer::KafkaProducer;
 
 #[derive(Clone)]
 struct Planet {
@@ -227,8 +229,16 @@ async fn main() {
 
     let solar_system_clone = Arc::clone(&solar_system);
 
+    let kafka_producer = KafkaProducer::new(
+        "localhost:9092",
+        "planet-positions"
+    ).expect("Failed to create Kafka producer");
+
+    let kafka_producer_clone = kafka_producer.clone();
     thread::spawn(move || {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
         let mut last_update = Instant::now();
+
         loop {
             let now = Instant::now();
             let delta_time = (now - last_update).as_secs_f64();
@@ -237,6 +247,14 @@ async fn main() {
             {
                 let mut solar_system = solar_system_clone.lock().unwrap();
                 solar_system.update(delta_time);
+
+                // Envoi des positions vers Kafka
+                let positions = solar_system.positions();
+                runtime.block_on(async {
+                    if let Err(e) = kafka_producer_clone.send_planet_positions(positions).await {
+                        eprintln!("Failed to send positions to Kafka: {}", e);
+                    }
+                });
             }
 
             thread::sleep(Duration::from_millis(1000 / 60));
