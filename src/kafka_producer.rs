@@ -10,7 +10,7 @@ struct PlanetPosition {
     x: f64,
     y: f64,
     z: f64,
-    timestamp: u64,
+    timestamp: u128,
 }
 
 #[derive(Clone)]
@@ -39,7 +39,7 @@ impl KafkaProducer {
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
-            .as_secs();
+            .as_millis();
 
         for (name, (x, y)) in positions {
             let position = PlanetPosition {
