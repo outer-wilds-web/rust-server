@@ -1,6 +1,7 @@
-mod ship;
 mod kafka_producer;
+mod ship;
 
+use crate::kafka_producer::KafkaProducer;
 use dotenv::dotenv;
 use serde::Serialize;
 use serde_json::{self, json};
@@ -13,7 +14,6 @@ use std::{env, thread};
 use uuid::Uuid;
 use warp::Filter;
 use ws::{Handler, Handshake, Message, Result, Sender};
-use crate::kafka_producer::KafkaProducer;
 
 #[derive(Clone)]
 struct Planet {
@@ -119,7 +119,6 @@ impl Handler for Server {
         }
 
         thread::spawn(move || {
-            println!("thread inside the websocket !");
             loop {
                 // Envoyer les informations des planètes et du vaisseau via la websocket
                 let positions = {
@@ -229,14 +228,13 @@ async fn main() {
 
     let solar_system_clone = Arc::clone(&solar_system);
 
-    let kafka_producer = KafkaProducer::new(
-        "localhost:9092",
-        "planet-positions"
-    ).expect("Failed to create Kafka producer");
+    let kafka_producer = KafkaProducer::new("localhost:9092", "planet-positions")
+        .expect("Failed to create Kafka producer");
 
     let kafka_producer_clone = kafka_producer.clone();
+
+    // Thread to update the solar system
     thread::spawn(move || {
-        let runtime = tokio::runtime::Runtime::new().unwrap();
         let mut last_update = Instant::now();
 
         loop {
@@ -247,17 +245,31 @@ async fn main() {
             {
                 let mut solar_system = solar_system_clone.lock().unwrap();
                 solar_system.update(delta_time);
-
-                // Envoi des positions vers Kafka
-                let positions = solar_system.positions();
-                runtime.block_on(async {
-                    if let Err(e) = kafka_producer_clone.send_planet_positions(positions).await {
-                        eprintln!("Failed to send positions to Kafka: {}", e);
-                    }
-                });
             }
 
             thread::sleep(Duration::from_millis(1000 / 60));
+        }
+    });
+
+    let solar_system_clone = Arc::clone(&solar_system);
+
+    // Thread to send position to Kafka (not the same frequency as the solar system update)
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(1));
+
+        loop {
+            interval.tick().await;
+
+            let positions = {
+                let solar_system = solar_system_clone.lock().unwrap();
+                solar_system.positions()
+            };
+
+            if let Err(e) = kafka_producer_clone.send_planet_positions(positions).await {
+                eprintln!("Failed to send positions to Kafka: {}", e);
+            }
+
+            tokio::time::sleep(Duration::from_millis(500)).await;
         }
     });
 
