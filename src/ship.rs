@@ -98,18 +98,6 @@ impl TheShip {
         self.position.0 += self.speed.0 * delta_time;
         self.position.1 += self.speed.1 * delta_time;
         self.position.2 += self.speed.2 * delta_time;
-        
-        // Print the position to debug
-        println!(
-            "Updated speed: ({:.2}, {:.2}, {:.2})",
-            self.speed.0, self.speed.1, self.speed.2
-        );
-
-        // Print the position to debug
-        println!(
-            "Updated position: ({:.2}, {:.2}, {:.2})",
-            self.position.0, self.position.1, self.position.2
-        );
     }
 
     pub fn accelerate(&mut self, delta_time: f64) {
