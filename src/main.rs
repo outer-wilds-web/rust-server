@@ -145,7 +145,7 @@ impl Handler for Server {
                 });
                 out_clone.send(Message::text(message.to_string())).unwrap();
 
-                thread::sleep(Duration::from_millis(1000 / 60));
+                thread::sleep(Duration::from_millis(1000/30))
             }
         });
 
@@ -247,7 +247,7 @@ async fn main() {
                 solar_system.update(delta_time);
             }
 
-            thread::sleep(Duration::from_millis(1000 / 60));
+            thread::sleep(Duration::from_millis(1000/30));
         }
     });
 
