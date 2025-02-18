@@ -21,9 +21,8 @@ impl Handler for Server {
         let solar_system_clone = Arc::clone(&self.solar_system);
         let out_clone = self.out.clone();
 
-        let ship = Arc::new(Mutex::new(TheShip::new()));
+        let ship = TheShip::new();
         let ship_clone = ship.clone();
-        self.ship_uuid = ship.lock().unwrap().uuid;
 
         {
             let mut solar_system = solar_system_clone.lock().unwrap();
@@ -44,11 +43,11 @@ impl Handler for Server {
                         .ships
                         .values()
                         .into_iter()
-                        .map(|ship| ship.lock().unwrap().clone())
+                        .map(|ship| ship.clone())
                         .collect()
                 };
 
-                let ship_info = { ship_clone.lock().unwrap().to_json() };
+                let ship_info = { ship_clone.to_json() };
 
                 let message = json!({
                     "planets": positions,
@@ -58,6 +57,7 @@ impl Handler for Server {
                 out_clone.send(Message::text(message.to_string())).unwrap();
 
                 thread::sleep(Duration::from_millis(1000 / 30))
+                // thread::sleep(Duration::from_millis(1000))
             }
         });
 
@@ -69,9 +69,8 @@ impl Handler for Server {
         if let Ok(data) = serde_json::from_str::<serde_json::Value>(&msg_text) {
             if let Some(data) = data.get("data") {
                 if let Some(engines) = data.get("engines") {
-                    let solar_system = self.solar_system.lock().unwrap();
-                    let ship = solar_system.ships.get(&self.ship_uuid).unwrap();
-                    let mut ship = ship.lock().unwrap();
+                    let mut solar_system = self.solar_system.lock().unwrap();
+                    let ship = solar_system.ships.get_mut(&self.ship_uuid).unwrap();
                     ship.engines.front = engines.get("front").unwrap().as_bool().unwrap();
                     ship.engines.back = engines.get("back").unwrap().as_bool().unwrap();
                     ship.engines.left = engines.get("left").unwrap().as_bool().unwrap();
@@ -81,9 +80,8 @@ impl Handler for Server {
                 }
 
                 if let Some(rotation) = data.get("rotation") {
-                    let solar_system = self.solar_system.lock().unwrap();
-                    let ship = solar_system.ships.get(&self.ship_uuid).unwrap();
-                    let mut ship = ship.lock().unwrap();
+                    let mut solar_system = self.solar_system.lock().unwrap();
+                    let ship = solar_system.ships.get_mut(&self.ship_uuid).unwrap();
                     ship.rotation_engines.left = rotation.get("left").unwrap().as_bool().unwrap();
                     ship.rotation_engines.right = rotation.get("right").unwrap().as_bool().unwrap();
                     ship.rotation_engines.up = rotation.get("up").unwrap().as_bool().unwrap();

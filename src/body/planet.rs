@@ -1,34 +1,46 @@
-use std::f64::consts::PI;
+use crate::utils::normalize_direction;
 
-#[derive(Clone)]
+use super::Body;
+
+#[derive(Debug, Clone)]
 pub struct Planet {
     pub name: String,
-    pub distance_from_sun: f64,
-    pub angle: f64,
-    pub angular_velocity: f64, // radians per second
+    pub body: Body,
 }
 
 impl Planet {
-    pub fn new(name: &str, distance_from_sun: f64, orbital_period: f64) -> Self {
+    pub fn new(name: &str, initial_position: (f64, f64, f64), mass: f64, mass_sun: f64) -> Self {
+        let initial_speed = Self::initial_speed(initial_position, mass_sun);
         Self {
             name: name.to_string(),
-            distance_from_sun,
-            angle: 0.0,
-            angular_velocity: 2.0 * PI / orbital_period,
+            body: Body::new(
+                mass,
+                initial_position,
+                initial_speed,
+                normalize_direction(initial_speed),
+            ),
         }
     }
 
-    pub fn update_position(&mut self, delta_time: f64) {
-        self.angle += self.angular_velocity * delta_time;
-        if self.angle > 2.0 * PI {
-            self.angle -= 2.0 * PI;
-        }
+    pub fn update(&mut self, delta_time: f64) {
+        self.body.update(delta_time);
     }
 
-    pub fn position(&self) -> (f64, f64) {
-        (
-            self.distance_from_sun * self.angle.cos(),
-            self.distance_from_sun * self.angle.sin(),
-        )
+    pub fn initial_speed(initial_position: (f64, f64, f64), mass_sun: f64) -> (f64, f64, f64) {
+        let g = 6.67430e-11; // Constante gravitationnelle
+        let distance =
+            (initial_position.0.powi(2) + initial_position.1.powi(2) + initial_position.2.powi(2))
+                .sqrt();
+
+        if distance == 0.0 {
+            return (0.0, 0.0, 0.0);
+        } else {
+            let speed = (g * mass_sun / distance).sqrt();
+            (
+                -speed * initial_position.1 / distance,
+                speed * initial_position.0 / distance,
+                0.0,
+            )
+        }
     }
 }

@@ -66,6 +66,7 @@ async fn main() {
             }
 
             thread::sleep(Duration::from_millis(1000 / 30));
+            // thread::sleep(Duration::from_millis(1000))
         }
     });
 
