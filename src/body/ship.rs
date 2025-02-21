@@ -86,6 +86,28 @@ impl TheShip {
     }
 
     pub fn update(&mut self, delta_time: f64) {
+        if self.engines.back {
+            self.body.apply_force(
+                (
+                    self.body.direction.0 * self.engines.power,
+                    self.body.direction.1 * self.engines.power,
+                    self.body.direction.2 * self.engines.power,
+                ),
+                delta_time,
+            );
+        }
+
+        if self.engines.front {
+            self.body.apply_force(
+                (
+                    -self.body.direction.0 * self.engines.power,
+                    -self.body.direction.1 * self.engines.power,
+                    -self.body.direction.2 * self.engines.power,
+                ),
+                delta_time,
+            );
+        }
+
         let vertical_local = (
             -self.body.direction.0 * self.pitch.sin(),
             self.pitch.cos(),

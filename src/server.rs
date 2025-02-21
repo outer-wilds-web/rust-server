@@ -58,7 +58,6 @@ impl Handler for Server {
                     "ship": ship_info,
                     "ships": ships,
                 });
-                println!("Sending message: {}", message);
                 out_clone.send(Message::text(message.to_string())).unwrap();
 
                 // thread::sleep(Duration::from_millis(1000 / 30))
