@@ -89,9 +89,9 @@ impl TheShip {
         if self.engines.back {
             self.body.apply_force(
                 (
-                    self.body.direction.0 * self.engines.power,
-                    self.body.direction.1 * self.engines.power,
-                    self.body.direction.2 * self.engines.power,
+                    -self.body.direction.0 * self.engines.power,
+                    -self.body.direction.1 * self.engines.power,
+                    -self.body.direction.2 * self.engines.power,
                 ),
                 delta_time,
             );
@@ -100,9 +100,9 @@ impl TheShip {
         if self.engines.front {
             self.body.apply_force(
                 (
-                    -self.body.direction.0 * self.engines.power,
-                    -self.body.direction.1 * self.engines.power,
-                    -self.body.direction.2 * self.engines.power,
+                    self.body.direction.0 * self.engines.power,
+                    self.body.direction.1 * self.engines.power,
+                    self.body.direction.2 * self.engines.power,
                 ),
                 delta_time,
             );
@@ -118,9 +118,9 @@ impl TheShip {
         if self.engines.up {
             self.body.apply_force(
                 (
-                    -vertical_local.0 * self.engines.power,
-                    -vertical_local.1 * self.engines.power,
-                    -vertical_local.2 * self.engines.power,
+                    vertical_local.0 * self.engines.power,
+                    vertical_local.1 * self.engines.power,
+                    vertical_local.2 * self.engines.power,
                 ),
                 delta_time,
             );
@@ -130,9 +130,9 @@ impl TheShip {
         if self.engines.down {
             self.body.apply_force(
                 (
-                    vertical_local.0 * self.engines.power,
-                    vertical_local.1 * self.engines.power,
-                    vertical_local.2 * self.engines.power,
+                    -vertical_local.0 * self.engines.power,
+                    -vertical_local.1 * self.engines.power,
+                    -vertical_local.2 * self.engines.power,
                 ),
                 delta_time,
             );
@@ -149,9 +149,9 @@ impl TheShip {
         if self.engines.left {
             self.body.apply_force(
                 (
-                    lateral_local.0 * self.engines.power,
-                    lateral_local.1 * self.engines.power,
-                    lateral_local.2 * self.engines.power,
+                    -lateral_local.0 * self.engines.power,
+                    -lateral_local.1 * self.engines.power,
+                    -lateral_local.2 * self.engines.power,
                 ),
                 delta_time,
             );
@@ -161,9 +161,9 @@ impl TheShip {
         if self.engines.right {
             self.body.apply_force(
                 (
-                    -lateral_local.0 * self.engines.power,
-                    -lateral_local.1 * self.engines.power,
-                    -lateral_local.2 * self.engines.power,
+                    lateral_local.0 * self.engines.power,
+                    lateral_local.1 * self.engines.power,
+                    lateral_local.2 * self.engines.power,
                 ),
                 delta_time,
             );

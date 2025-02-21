@@ -65,8 +65,8 @@ async fn main() {
                 solar_system.update(delta_time);
             }
 
-            // thread::sleep(Duration::from_millis(1000 / 30));
-            thread::sleep(Duration::from_millis(1000))
+            thread::sleep(Duration::from_millis(1000 / 30));
+            // thread::sleep(Duration::from_millis(1000))
         }
     });
 

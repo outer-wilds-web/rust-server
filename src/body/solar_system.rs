@@ -36,17 +36,17 @@ impl SolarSystem {
                 self.planets[i].body.apply_force(force, delta_time);
                 self.planets[j]
                     .body
-                    .apply_force((-force.0, -force.1, -force.2), delta_time);
+                    .apply_force((force.0, force.1, force.2), delta_time);
             }
         }
 
-        // // Update ships
-        // for ship in self.ships.values_mut() {
-        //     for planet in &self.planets {
-        //         let force = planet.body.gravitational_force(&ship.body);
-        //         ship.body.apply_force(force, delta_time);
-        //     }
-        // }
+        // Update ships
+        for ship in self.ships.values_mut() {
+            for planet in &self.planets {
+                let force = planet.body.gravitational_force(&ship.body);
+                ship.body.apply_force(force, delta_time);
+            }
+        }
 
         self.planets.iter_mut().for_each(|p| p.update(delta_time));
         self.ships

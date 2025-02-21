@@ -60,8 +60,8 @@ impl Handler for Server {
                 });
                 out_clone.send(Message::text(message.to_string())).unwrap();
 
-                // thread::sleep(Duration::from_millis(1000 / 30))
-                thread::sleep(Duration::from_millis(1000))
+                thread::sleep(Duration::from_millis(1000 / 30))
+                // thread::sleep(Duration::from_millis(1000))
             }
         });
 

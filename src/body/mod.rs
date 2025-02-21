@@ -34,9 +34,9 @@ impl Body {
     }
 
     pub fn apply_force(&mut self, force: (f64, f64, f64), delta_time: f64) {
-        self.speed.0 += force.0 * delta_time / self.mass;
-        self.speed.1 += force.1 * delta_time / self.mass;
-        self.speed.2 += force.2 * delta_time / self.mass;
+        self.speed.0 -= force.0 * delta_time / self.mass;
+        self.speed.1 -= force.1 * delta_time / self.mass;
+        self.speed.2 -= force.2 * delta_time / self.mass;
     }
 
     pub fn gravitational_force(&self, other: &Body) -> (f64, f64, f64) {
