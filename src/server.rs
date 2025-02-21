@@ -22,7 +22,8 @@ impl Handler for Server {
         let out_clone = self.out.clone();
 
         let ship = TheShip::new();
-        let ship_clone = ship.clone();
+        self.ship_uuid = ship.uuid;
+        let ship_uuid_clone = self.ship_uuid;
 
         {
             let mut solar_system = solar_system_clone.lock().unwrap();
@@ -47,17 +48,21 @@ impl Handler for Server {
                         .collect()
                 };
 
-                let ship_info = { ship_clone.to_json() };
+                let ship_info = {
+                    let ship = ships.iter().find(|s| s.uuid == ship_uuid_clone).unwrap();
+                    ship.to_json()
+                };
 
                 let message = json!({
                     "planets": positions,
                     "ship": ship_info,
                     "ships": ships,
                 });
+                println!("Sending message: {}", message);
                 out_clone.send(Message::text(message.to_string())).unwrap();
 
-                thread::sleep(Duration::from_millis(1000 / 30))
-                // thread::sleep(Duration::from_millis(1000))
+                // thread::sleep(Duration::from_millis(1000 / 30))
+                thread::sleep(Duration::from_millis(1000))
             }
         });
 

@@ -4,7 +4,7 @@ use uuid::Uuid;
 use super::planet::Planet;
 use super::ship::TheShip;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct SolarSystem {
     pub planets: Vec<Planet>,
     pub ships: HashMap<Uuid, TheShip>,
