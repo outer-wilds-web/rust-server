@@ -12,15 +12,15 @@ pub struct SolarSystem {
 
 impl SolarSystem {
     pub fn new() -> Self {
-        let sun_mass = 1.989e15;
+        let sun_mass = 1.989e17;
         Self {
             planets: vec![
                 Planet::new("Sun", (0.0, 0.0, 0.0), sun_mass, sun_mass),
-                Planet::new("Mercury", (100.0, 0.0, 0.0), 3.285e3, sun_mass),
-                Planet::new("Venus", (250.0, 100.0, 0.0), 4.867e4, sun_mass),
-                Planet::new("Earth", (200.0, 300.0, 0.0), 5.972e4, sun_mass),
-                Planet::new("Mars", (300.0, 500.0, 0.0), 6.39e3, sun_mass),
-                Planet::new("Jupiter", (800.0, 600.0, 0.0), 1.898e7, sun_mass),
+                Planet::new("Mercury", (8.0e2, 5.0e2, 0.0), 3.285e13, sun_mass),
+                Planet::new("Venus", (-1.25e3, 9.0e3, 0.0), 4.867e14, sun_mass),
+                Planet::new("Earth", (1.8e3, -1.8e3, 0.0), 5.972e14, sun_mass),
+                Planet::new("Mars", (2.0e3, 3.0e3, 0.0), 6.39e14, sun_mass),
+                Planet::new("Jupiter", (-5.0e3, -5.0e3, 0.0), 1.898e15, sun_mass),
             ],
             ships: HashMap::new(),
         }

@@ -38,9 +38,9 @@ impl TheShip {
     pub fn new() -> Self {
         Self {
             uuid: Uuid::new_v4(),
-            body: Body::new(1.0, (300.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+            body: Body::new(1000.0, (3000.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
             engines: Engines {
-                power: 1.0,
+                power: 10000.0,
                 front: false,
                 back: false,
                 left: false,
@@ -49,7 +49,7 @@ impl TheShip {
                 down: false,
             },
             rotation_engines: RotationEngines {
-                power: 0.5,
+                power: 0.8,
                 left: false,
                 right: false,
                 up: false,
