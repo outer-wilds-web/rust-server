@@ -1,3 +1,4 @@
+use crate::body::planet;
 use crate::body::ship::TheShip;
 use crate::body::solar_system::SolarSystem;
 use serde_json::{self, json};
@@ -38,6 +39,11 @@ impl Handler for Server {
                     solar_system.positions()
                 };
 
+                let planet_speeds = {
+                    let solar_system = solar_system_clone.lock().unwrap();
+                    solar_system.speeds()
+                };
+
                 let ships: Vec<TheShip> = {
                     let solar_system = solar_system_clone.lock().unwrap();
                     solar_system
@@ -55,6 +61,7 @@ impl Handler for Server {
 
                 let message = json!({
                     "planets": positions,
+                    "planet_speeds": planet_speeds,
                     "ship": ship_info,
                     "ships": ships,
                 });

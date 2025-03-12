@@ -69,4 +69,11 @@ impl SolarSystem {
             .map(|p| (p.name.clone(), p.body.position))
             .collect()
     }
+
+    pub fn speeds(&self) -> Vec<(String, (f64, f64, f64))> {
+        self.planets
+            .iter()
+            .map(|p| (p.name.clone(), p.body.speed))
+            .collect()
+    }
 }
