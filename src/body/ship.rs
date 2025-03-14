@@ -38,7 +38,7 @@ impl TheShip {
     pub fn new() -> Self {
         Self {
             uuid: Uuid::new_v4(),
-            body: Body::new(1000.0, (3000.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+            body: Body::new(1000.0, (0.0, 0.0, 3000.0), (0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
             engines: Engines {
                 power: 10000.0,
                 front: false,
