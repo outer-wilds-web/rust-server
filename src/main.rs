@@ -62,10 +62,10 @@ async fn main() {
 
             {
                 let mut solar_system = solar_system_clone.lock().unwrap();
-                solar_system.update(delta_time);
+                solar_system.update(1.0 / 60.0);
             }
 
-            thread::sleep(Duration::from_millis(1000 / 30));
+            thread::sleep(Duration::from_millis(1000 / 1000));
             // thread::sleep(Duration::from_millis(1000))
         }
     });

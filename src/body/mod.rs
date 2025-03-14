@@ -52,4 +52,11 @@ impl Body {
             force_magnitude * dz / distance,
         )
     }
+
+    pub fn distance(&self, other: &Body) -> f64 {
+        let dx = other.position.0 - self.position.0;
+        let dy = other.position.1 - self.position.1;
+        let dz = other.position.2 - self.position.2;
+        (dx * dx + dy * dy + dz * dz).sqrt()
+    }
 }

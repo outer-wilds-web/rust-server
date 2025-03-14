@@ -17,7 +17,7 @@ impl SolarSystem {
             planets: vec![
                 Planet::new("Sun", (0.0, 0.0, 0.0), sun_mass, sun_mass),
                 Planet::new("Mercury", (8.0e2, 5.0e2, 0.0), 3.285e13, sun_mass),
-                Planet::new("Venus", (-1.25e3, 9.0e3, 0.0), 4.867e14, sun_mass),
+                Planet::new("Venus", (-1.25e3, 1.0e3, 0.0), 4.867e14, sun_mass),
                 Planet::new("Earth", (1.8e3, -1.8e3, 0.0), 5.972e14, sun_mass),
                 Planet::new("Mars", (2.0e3, 3.0e3, 0.0), 6.39e14, sun_mass),
                 Planet::new("Jupiter", (-5.0e3, -5.0e3, 0.0), 1.898e15, sun_mass),
@@ -28,16 +28,11 @@ impl SolarSystem {
 
     pub fn update(&mut self, delta_time: f64) {
         // Update planets
-        for i in 0..self.planets.len() {
-            for j in (i + 1)..self.planets.len() {
-                let force = self.planets[i]
-                    .body
-                    .gravitational_force(&self.planets[j].body);
-                self.planets[i].body.apply_force(force, delta_time);
-                self.planets[j]
-                    .body
-                    .apply_force((force.0, force.1, force.2), delta_time);
-            }
+        for i in 1..self.planets.len() {
+            let force = self.planets[0]
+                .body
+                .gravitational_force(&self.planets[i].body);
+            self.planets[i].body.apply_force(force, delta_time);
         }
 
         // Update ships
