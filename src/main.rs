@@ -65,7 +65,8 @@ async fn main() {
                 solar_system.update(1.0 / 60.0);
             }
 
-            thread::sleep(Duration::from_millis(1000 / 1000));
+            // Vitesse du serveur
+            thread::sleep(Duration::from_micros(1000));
             // thread::sleep(Duration::from_millis(1000))
         }
     });
