@@ -66,7 +66,7 @@ async fn main() {
             }
 
             // Vitesse du serveur
-            thread::sleep(Duration::from_micros(1000))
+            thread::sleep(Duration::from_micros(60))
             // thread::sleep(Duration::from_millis(1000))
         }
     });
