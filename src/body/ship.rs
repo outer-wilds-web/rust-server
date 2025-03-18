@@ -32,6 +32,7 @@ pub struct TheShip {
     pub rotation_engines: RotationEngines,
     pub angle: f64,
     pub pitch: f64,
+    pub last_input: i64,
 }
 
 impl TheShip {
@@ -62,6 +63,7 @@ impl TheShip {
             },
             angle: -std::f64::consts::FRAC_PI_2,
             pitch: 0.0,
+            last_input: 0,
         }
     }
 
@@ -91,91 +93,113 @@ impl TheShip {
     }
 
     pub fn update(&mut self, delta_time: f64) {
-        if self.engines.back {
-            self.body.apply_force(
-                (
-                    -self.body.direction.0 * self.engines.power,
-                    -self.body.direction.1 * self.engines.power,
-                    -self.body.direction.2 * self.engines.power,
-                ),
-                delta_time,
+        println!("Updating ship");
+        println!("Last input: {:?}", self.last_input);
+        println!("Engines: {:?}", self.engines);
+        println!("Rotation engines: {:?}", self.rotation_engines);
+
+        if self.last_input < 15 {
+            if self.engines.back {
+                self.body.apply_force(
+                    (
+                        -self.body.direction.0 * self.engines.power,
+                        -self.body.direction.1 * self.engines.power,
+                        -self.body.direction.2 * self.engines.power,
+                    ),
+                    delta_time,
+                );
+            }
+
+            if self.engines.front {
+                self.body.apply_force(
+                    (
+                        self.body.direction.0 * self.engines.power,
+                        self.body.direction.1 * self.engines.power,
+                        self.body.direction.2 * self.engines.power,
+                    ),
+                    delta_time,
+                );
+            }
+
+            let vertical_local = (
+                -self.body.direction.0 * self.pitch.sin(),
+                self.pitch.cos(),
+                -self.body.direction.2 * self.pitch.sin(),
             );
-        }
 
-        if self.engines.front {
-            self.body.apply_force(
-                (
-                    self.body.direction.0 * self.engines.power,
-                    self.body.direction.1 * self.engines.power,
-                    self.body.direction.2 * self.engines.power,
-                ),
-                delta_time,
+            // Up vertical acceleration
+            if self.engines.up {
+                self.body.apply_force(
+                    (
+                        vertical_local.0 * self.engines.power,
+                        vertical_local.1 * self.engines.power,
+                        vertical_local.2 * self.engines.power,
+                    ),
+                    delta_time,
+                );
+            }
+
+            // Down vertical acceleration
+            if self.engines.down {
+                self.body.apply_force(
+                    (
+                        -vertical_local.0 * self.engines.power,
+                        -vertical_local.1 * self.engines.power,
+                        -vertical_local.2 * self.engines.power,
+                    ),
+                    delta_time,
+                );
+            }
+
+            // Lateral local direction
+            let lateral_local = (
+                self.body.direction.1 * 0.0 - self.body.direction.2 * 1.0,
+                self.body.direction.2 * 0.0 - self.body.direction.0 * 0.0,
+                self.body.direction.0 * 1.0 - self.body.direction.1 * 0.0,
             );
+
+            // Left lateral acceleration
+            if self.engines.left {
+                self.body.apply_force(
+                    (
+                        -lateral_local.0 * self.engines.power,
+                        -lateral_local.1 * self.engines.power,
+                        -lateral_local.2 * self.engines.power,
+                    ),
+                    delta_time,
+                );
+            }
+
+            // Right lateral acceleration
+            if self.engines.right {
+                self.body.apply_force(
+                    (
+                        lateral_local.0 * self.engines.power,
+                        lateral_local.1 * self.engines.power,
+                        lateral_local.2 * self.engines.power,
+                    ),
+                    delta_time,
+                );
+            }
+
+            self.rotate(delta_time);
+            self.body.update(delta_time);
+            self.last_input += 1;
+        } else {
+            self.last_input = 0;
+            // reset all the engines to false
+            self.engines.front = false;
+            self.engines.back = false;
+            self.engines.left = false;
+            self.engines.right = false;
+            self.engines.up = false;
+            self.engines.down = false;
+
+            self.rotation_engines.left = false;
+            self.rotation_engines.right = false;
+            self.rotation_engines.up = false;
+            self.rotation_engines.down = false;
         }
-
-        let vertical_local = (
-            -self.body.direction.0 * self.pitch.sin(),
-            self.pitch.cos(),
-            -self.body.direction.2 * self.pitch.sin(),
-        );
-
-        // Up vertical acceleration
-        if self.engines.up {
-            self.body.apply_force(
-                (
-                    vertical_local.0 * self.engines.power,
-                    vertical_local.1 * self.engines.power,
-                    vertical_local.2 * self.engines.power,
-                ),
-                delta_time,
-            );
-        }
-
-        // Down vertical acceleration
-        if self.engines.down {
-            self.body.apply_force(
-                (
-                    -vertical_local.0 * self.engines.power,
-                    -vertical_local.1 * self.engines.power,
-                    -vertical_local.2 * self.engines.power,
-                ),
-                delta_time,
-            );
-        }
-
-        // Lateral local direction
-        let lateral_local = (
-            self.body.direction.1 * 0.0 - self.body.direction.2 * 1.0,
-            self.body.direction.2 * 0.0 - self.body.direction.0 * 0.0,
-            self.body.direction.0 * 1.0 - self.body.direction.1 * 0.0,
-        );
-
-        // Left lateral acceleration
-        if self.engines.left {
-            self.body.apply_force(
-                (
-                    -lateral_local.0 * self.engines.power,
-                    -lateral_local.1 * self.engines.power,
-                    -lateral_local.2 * self.engines.power,
-                ),
-                delta_time,
-            );
-        }
-
-        // Right lateral acceleration
-        if self.engines.right {
-            self.body.apply_force(
-                (
-                    lateral_local.0 * self.engines.power,
-                    lateral_local.1 * self.engines.power,
-                    lateral_local.2 * self.engines.power,
-                ),
-                delta_time,
-            );
-        }
-
-        self.rotate(delta_time);
-        self.body.update(delta_time);
     }
 
     /// Rotate the ship

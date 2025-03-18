@@ -1,4 +1,3 @@
-use crate::body::planet;
 use crate::body::ship::TheShip;
 use crate::body::solar_system::SolarSystem;
 use serde_json::{self, json};
@@ -68,7 +67,7 @@ impl Handler for Server {
                 out_clone.send(Message::text(message.to_string())).unwrap();
 
                 // Vitesse d'envoi des informations via la websocket
-                thread::sleep(Duration::from_micros(1000))
+                thread::sleep(Duration::from_micros(60))
                 // thread::sleep(Duration::from_millis(1000))
             }
         });
@@ -83,6 +82,7 @@ impl Handler for Server {
                 if let Some(engines) = data.get("engines") {
                     let mut solar_system = self.solar_system.lock().unwrap();
                     let ship = solar_system.ships.get_mut(&self.ship_uuid).unwrap();
+                    ship.last_input = 0;
                     ship.engines.front = engines.get("front").unwrap().as_bool().unwrap();
                     ship.engines.back = engines.get("back").unwrap().as_bool().unwrap();
                     ship.engines.left = engines.get("left").unwrap().as_bool().unwrap();
@@ -94,6 +94,7 @@ impl Handler for Server {
                 if let Some(rotation) = data.get("rotation") {
                     let mut solar_system = self.solar_system.lock().unwrap();
                     let ship = solar_system.ships.get_mut(&self.ship_uuid).unwrap();
+                    ship.last_input = 0;
                     ship.rotation_engines.left = rotation.get("left").unwrap().as_bool().unwrap();
                     ship.rotation_engines.right = rotation.get("right").unwrap().as_bool().unwrap();
                     ship.rotation_engines.up = rotation.get("up").unwrap().as_bool().unwrap();
