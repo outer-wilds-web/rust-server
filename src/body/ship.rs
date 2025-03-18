@@ -186,9 +186,7 @@ impl TheShip {
                 );
             }
 
-            self.rotate(delta_time);
-            self.body.update(delta_time);
-            self.last_input += 1;
+           self.last_input += 1;
         } else {
             self.last_input += 1;
             // reset all the engines to false
@@ -204,6 +202,10 @@ impl TheShip {
             self.rotation_engines.up = false;
             self.rotation_engines.down = false;
         }
+
+        self.rotate(delta_time);
+        self.body.update(delta_time);
+  
     }
 
     /// Rotate the ship
