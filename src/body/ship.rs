@@ -93,14 +93,14 @@ impl TheShip {
     }
 
     pub fn update(&mut self, delta_time: f64) {
-//        if self.engines.left == true {
-//            println!("Updating ship");
-//            println!("Last input: {:?}", self.last_input);
-//            println!("Engines: {:?}", self.engines);
-//            println!("Rotation engines: {:?}", self.rotation_engines);
-//        } else {
-//            println!("Last input: {:?}", self.last_input);
-//        }
+        //        if self.engines.left == true {
+        //            println!("Updating ship");
+        //            println!("Last input: {:?}", self.last_input);
+        //            println!("Engines: {:?}", self.engines);
+        //            println!("Rotation engines: {:?}", self.rotation_engines);
+        //        } else {
+        //            println!("Last input: {:?}", self.last_input);
+        //        }
 
         if self.last_input < 15 {
             if self.engines.back {
@@ -186,7 +186,7 @@ impl TheShip {
                 );
             }
 
-           self.last_input += 1;
+            self.last_input += 1;
         } else {
             self.last_input += 1;
             // reset all the engines to false
@@ -205,7 +205,6 @@ impl TheShip {
 
         self.rotate(delta_time);
         self.body.update(delta_time);
-  
     }
 
     /// Rotate the ship
