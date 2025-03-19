@@ -67,7 +67,7 @@ impl Handler for Server {
                 out_clone.send(Message::text(message.to_string())).unwrap();
 
                 // Vitesse d'envoi des informations via la websocket
-                thread::sleep(Duration::from_micros(1000))
+                thread::sleep(Duration::from_micros(300))
                 // thread::sleep(Duration::from_millis(1000))
             }
         });
