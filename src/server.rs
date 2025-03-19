@@ -2,8 +2,8 @@ use crate::body::ship::TheShip;
 use crate::body::solar_system::SolarSystem;
 use serde_json::{self, json};
 use std::sync::{Arc, Mutex};
-use std::thread;
 use std::time::{Duration, Instant};
+use std::{env, thread};
 use uuid::Uuid;
 use ws::{Handler, Handshake, Message, Result, Sender};
 
@@ -29,6 +29,11 @@ impl Handler for Server {
             let mut solar_system = solar_system_clone.lock().unwrap();
             solar_system.add_ship(ship);
         }
+
+        let sleep_time = env::var("SERVER_SLEEP_TIME_MICROSECONDS")
+            .unwrap_or_else(|_| "1000000".to_string())
+            .parse::<u64>()
+            .unwrap();
 
         thread::spawn(move || {
             loop {
@@ -67,8 +72,7 @@ impl Handler for Server {
                 out_clone.send(Message::text(message.to_string())).unwrap();
 
                 // Vitesse d'envoi des informations via la websocket
-                thread::sleep(Duration::from_micros(300))
-                // thread::sleep(Duration::from_millis(1000))
+                thread::sleep(Duration::from_micros(sleep_time));
             }
         });
 

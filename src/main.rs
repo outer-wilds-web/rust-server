@@ -52,22 +52,17 @@ async fn main() {
     let solar_system_clone = Arc::clone(&solar_system);
 
     // Thread to update the solar system
+    let sleep_time = env::var("SIMULATION_SLEEP_TIME_MICROSECONDS")
+        .unwrap_or_else(|_| "1000000".to_string())
+        .parse::<u64>()
+        .unwrap();
     thread::spawn(move || {
-        let mut last_update = Instant::now();
-
         loop {
-            let now = Instant::now();
-            let delta_time = (now - last_update).as_secs_f64();
-            last_update = now;
-
-            {
-                let mut solar_system = solar_system_clone.lock().unwrap();
-                solar_system.update(1.0 / 60.0);
-            }
+            let mut solar_system = solar_system_clone.lock().unwrap();
+            solar_system.update(1.0 / 60.0);
 
             // Vitesse du serveur
-            thread::sleep(Duration::from_micros(60))
-            // thread::sleep(Duration::from_millis(1000))
+            thread::sleep(Duration::from_micros(sleep_time));
         }
     });
 
